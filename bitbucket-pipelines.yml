@@ -1,0 +1,53 @@
+services:
+  - docker:latest
+
+pipelines:
+  default:
+      - step:
+          name: build jar
+          image: maven:3.8.1-openjdk-17-slim
+          before_script:
+            - source .${CI_COMMIT_REF_NAME}.env
+          script:
+            - echo "Building jar"
+            - mvn clean install -Dspring.profiles.active=$SPRING_ACTIVE_PROFILE && mvn package -B -e -Dspring.profiles.active=$SPRING_ACTIVE_PROFILE
+          only:
+            - dev
+            - master
+          artifacts:
+            paths:
+              - target/*.jar
+          tags:
+            - docker
+
+      - step:
+          name: build and push docker image
+          image: docker:stable
+          before_script:
+            - source .${CI_COMMIT_REF_NAME}.env
+            - echo "$CI_COMMIT_REF_NAME"
+          script:
+            - docker build --build-arg SPRING_ACTIVE_PROFILE=$SPRING_ACTIVE_PROFILE -t $DOCKER_REPO .
+            - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD docker.io
+            - docker push $DOCKER_REPO
+          only:
+            - dev
+            - master
+
+      - step:
+          name: deploy
+          image: ubuntu:latest
+          before_script:
+            - eval $(ssh-agent -s)
+            - echo "$DEV_SSH_PRIVATE_KEY" | tr -d '\r'
+            - echo "$DEV_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+            - mkdir -p ~/.ssh
+            - chmod 700 ~/.ssh
+            - ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
+            - chmod 644 ~/.ssh/known_hosts
+            - source .${CI_COMMIT_REF_NAME}.env
+          script:
+            - ssh $DEV_USER@$SERVER_IP "docker login -u $DOCKER_USER -p $DOCKER_PASSWORD docker.io; docker stop $APP_NAME; docker system prune -a -f; docker pull $DOCKER_REPO; docker container run -d --name $APP_NAME -p $PORT:8080 -e SPRING_PROFILES_ACTIVE=$SPRING_ACTIVE_PROFILE $DOCKER_REPO; docker logout"
+          only:
+            - dev
+            - master
