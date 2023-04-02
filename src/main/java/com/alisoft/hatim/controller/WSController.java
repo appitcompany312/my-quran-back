@@ -1,6 +1,5 @@
 package com.alisoft.hatim.controller;
 
-import com.alisoft.hatim.config.security.jwt.JwtTokenProvider;
 import com.alisoft.hatim.dto.request.BookPageRequestDto;
 import com.alisoft.hatim.dto.request.PageRequestDto;
 import com.alisoft.hatim.exception.NotFoundException;
@@ -19,7 +18,6 @@ import java.util.UUID;
 @Controller
 public class WSController {
     private final WsService wsService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     @MessageMapping("/get_juz_by_hatim")
     public void getJuzByHatim(
@@ -41,13 +39,11 @@ public class WSController {
     @MessageMapping("/book")
     public void check(@RequestBody BookPageRequestDto bookPageRequestDto) throws NotFoundException {
         wsService.bookPage(bookPageRequestDto);
-        wsService.checkBookedPage(bookPageRequestDto);
     }
 
     @MessageMapping("/in_progress")
     public void inProgress(@RequestBody PageRequestDto pageRequestDto) throws NotFoundException {
         wsService.setPageInProgress(pageRequestDto);
-        wsService.checkInProgressPages(pageRequestDto);
     }
 
     @MessageMapping("/done")

@@ -9,20 +9,19 @@ import com.alisoft.hatim.dto.request.BookPageRequestDto;
 import com.alisoft.hatim.dto.request.PageRequestDto;
 import com.alisoft.hatim.exception.NotFoundException;
 import com.alisoft.hatim.exception.PermissionDeniedException;
-import com.alisoft.hatim.mapper.PageMapper;
 import com.alisoft.hatim.mapper.JuzMapper;
+import com.alisoft.hatim.mapper.PageMapper;
 import com.alisoft.hatim.service.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
-import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Data
 @Service
@@ -35,7 +34,6 @@ public class WsServiceImpl implements WsService {
     private final JuzMapper juzMapper;
     private final PageService pageService;
     private final PageMapper pageMapper;
-    private final TaskScheduler taskScheduler;
 
     @Override
     public void getJuzByHatim(UUID hatimId) throws NotFoundException {
@@ -49,8 +47,7 @@ public class WsServiceImpl implements WsService {
         if (!page.getUser().getUsername().equals(bookPageRequestDto.getUsername())) throw new PermissionDeniedException("You don’t have permission to access.");
         page = pageService.pageToDo(page);
         listOfJuz(page.getJuz().getHatim());
-//        listOfPage(page.getJuz());
-        listOfUsernamePage(page.getJuz(), bookPageRequestDto.getUsername());
+        listOfPage(page.getJuz());
         userPages(bookPageRequestDto.getUsername());
     }
 
@@ -59,12 +56,12 @@ public class WsServiceImpl implements WsService {
     public void bookPage(BookPageRequestDto bookPageRequestDto) throws NotFoundException {
         Page page = pageService.get(bookPageRequestDto.getPageId());
         page = pageService.bookPage(page, userService.findByUserName(bookPageRequestDto.getUsername()));
-        Juz juz = juzService.get(page.getJuz().getId());
+        Juz juz = page.getJuz();
         if (juz.getStatus() != JuzStatus.IN_PROGRESS) {
             juzService.setJuzStatusInProgress(juz);
         }
         listOfJuz(juz.getHatim());
-        listOfUsernamePage(page.getJuz(), bookPageRequestDto.getUsername());
+        listOfPage(juz);
         userPages(bookPageRequestDto.getUsername());
     }
 
@@ -79,12 +76,12 @@ public class WsServiceImpl implements WsService {
         for (UUID pageId: pageRequestDto.getPageIds()) {
             Page page = pageService.get(pageId);
             page = pageService.pageInProgress(page, userService.findByUserName(pageRequestDto.getUsername()));
-            Juz juz = juzService.get(page.getJuz().getId());
+            Juz juz = page.getJuz();
             if (juz.getStatus() != JuzStatus.IN_PROGRESS) {
                 juzService.setJuzStatusInProgress(juz);
             }
             listOfJuz(juz.getHatim());
-            listOfUsernamePage(page.getJuz(), pageRequestDto.getUsername());
+            listOfPage(juz);
             userPages(pageRequestDto.getUsername());
         }
     }
@@ -95,7 +92,7 @@ public class WsServiceImpl implements WsService {
         for (UUID pageId: pageRequestDto.getPageIds()) {
             Page page = pageService.get(pageId);
             page = pageService.pageDone(page, userService.findByUserName(pageRequestDto.getUsername()));
-            Juz juz = juzService.get(page.getJuz().getId());
+            Juz juz = page.getJuz();
             if (pageService.isAllPagesDone(juz)) {
                 juzService.setJuzStatusDone(juz);
                 if (juzService.isAllJuzsDone(juz.getHatim())) {
@@ -103,7 +100,7 @@ public class WsServiceImpl implements WsService {
                 }
             }
             listOfJuz(juz.getHatim());
-            listOfUsernamePage(page.getJuz(), pageRequestDto.getUsername());
+            listOfPage(juz);
             userPages(pageRequestDto.getUsername());
         }
 
@@ -115,49 +112,28 @@ public class WsServiceImpl implements WsService {
     }
 
     @Override
-    @Transactional
-    public void checkBookedPage(BookPageRequestDto bookPageRequestDto) {
-        taskScheduler.schedule(
-                () -> {
-                    Page page;
-                    try {
-                        page = pageService.get(bookPageRequestDto.getPageId());
-                    } catch (NotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                    if (page.getStatus().equals(PageStatus.BOOKED)) {
-                        pageService.pageToDo(page);
-                        listOfJuz(page.getJuz().getHatim());
-                        listOfUsernamePage(page.getJuz(), bookPageRequestDto.getUsername());
-                        userPages(bookPageRequestDto.getUsername());
-                    }
-                },
-                new Date(OffsetDateTime.now().plusMinutes(5).toInstant().toEpochMilli())
-        );
+    public void rollbackExpiredBookedPages() {
+        setToDoExpiredPages(pageService.findAllWhichBookedFiveMinutesAgo());
     }
 
     @Override
-    @Transactional
-    public void checkInProgressPages(PageRequestDto pageRequestDto) {
-        taskScheduler.schedule(
-                () -> {
-                    for (UUID pageId: pageRequestDto.getPageIds()) {
-                        Page page;
-                        try {
-                            page = pageService.get(pageId);
-                        } catch (NotFoundException e) {
-                            throw new RuntimeException(e);
-                        }
-                        if (page.getStatus().equals(PageStatus.IN_PROGRESS)) {
-                            page = pageService.pageToDo(page);
-                            listOfJuz(page.getJuz().getHatim());
-                            listOfUsernamePage(page.getJuz(), pageRequestDto.getUsername());
-                            userPages(pageRequestDto.getUsername());
-                        }
-                    }
-                },
-                new Date(OffsetDateTime.now().plusMinutes(2880).toInstant().toEpochMilli())
-        );
+    public void rollbackExpiredProgressedPages() {
+        setToDoExpiredPages(pageService.findAllWhichProgressedTwoDayAgo());
+    }
+
+    private void setToDoExpiredPages(List<Page> expiredPages) {
+        if (!expiredPages.isEmpty()) {
+            Map<Juz, Map<String, List<Page>>> groupedPages = expiredPages.stream()
+                    .collect(Collectors.groupingBy(Page::getJuz,
+                            Collectors.groupingBy(p -> p.getUser().getUsername())));
+
+            groupedPages.forEach((juz, userPagesMap) -> userPagesMap.forEach((username, pages) -> {
+                pageService.pagesToDo(pages);
+                listOfJuz(juz.getHatim());
+                listOfPage(juz);
+                userPages(username);
+            }));
+        }
     }
 
     private void listOfJuz(Hatim hatim) {
@@ -175,14 +151,6 @@ public class WsServiceImpl implements WsService {
                         "/topic/" + juz.getId() + "/list_of_page",
                         pageMapper.pagesToResponseDtos(pageService.getAllByJuz(juz))
                         );
-    }
-
-    private void listOfUsernamePage(Juz juz, String username) {
-        simpMessagingTemplate
-                .convertAndSend(
-                        "/topic/" + juz.getId() + "/list_of_page",
-                        pageMapper.pagesToResponseDtosWithUser(pageService.getAllByJuz(juz), username)
-                );
     }
 
     private void userPages(String username) {

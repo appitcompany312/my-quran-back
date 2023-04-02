@@ -1,6 +1,5 @@
 package com.alisoft.hatim.controller;
 
-import com.alisoft.hatim.config.security.jwt.JwtUser;
 import com.alisoft.hatim.domain.Juz;
 import com.alisoft.hatim.domain.Page;
 import com.alisoft.hatim.dto.request.PageRequestDto;
@@ -11,7 +10,6 @@ import com.alisoft.hatim.service.JuzService;
 import com.alisoft.hatim.service.PageService;
 import com.alisoft.hatim.service.WsService;
 import lombok.Data;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,7 +33,6 @@ public class PageController {
 
     @GetMapping("/get_by_juz/{id}")
     public List<PageResponseDto> getByJuz(
-            @AuthenticationPrincipal JwtUser jwtUser,
             @PathVariable UUID id
     ) throws NotFoundException {
         Juz juz = juzService.get(id);
@@ -47,7 +44,6 @@ public class PageController {
             @RequestBody PageRequestDto pageRequestDto
     ) throws NotFoundException {
         wsService.setPageInProgress(pageRequestDto);
-        wsService.checkInProgressPages(pageRequestDto);
     }
 
     @PostMapping("/done")

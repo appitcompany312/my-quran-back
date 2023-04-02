@@ -16,6 +16,8 @@ public interface PageService {
     void createPagesForJuz(Juz juz, JwtUser jwtUser) throws NotFoundException;
 
     Page pageToDo(Page page);
+
+    void pagesToDo(List<Page> pages);
     Page bookPage(Page page, User user);
     Page pageInProgress(Page page, User user);
     Page pageDone(Page page, User user);
@@ -29,4 +31,7 @@ public interface PageService {
     List<Page> findAllByStatus(PageStatus status);
 
     List<Page> findAllByJuzAndStatus(Juz juz, PageStatus status);
+
+    List<Page> findAllWhichBookedFiveMinutesAgo();
+    List<Page> findAllWhichProgressedTwoDayAgo();
 }

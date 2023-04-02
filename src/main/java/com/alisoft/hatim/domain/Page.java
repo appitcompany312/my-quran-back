@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -27,4 +28,10 @@ public class Page extends BaseAuditedEntity {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @Column(name = "booked_at")
+    private LocalDateTime bookedAt;
+
+    @Column(name = "progressed_at")
+    private LocalDateTime progressedAt;
 }

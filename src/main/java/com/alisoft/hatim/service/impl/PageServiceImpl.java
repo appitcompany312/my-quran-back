@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,7 +35,7 @@ public class PageServiceImpl implements PageService {
 
     @Override
     @Transactional
-    public void createPagesForJuz(Juz juz, JwtUser jwtUser) throws NotFoundException {
+    public void createPagesForJuz(Juz juz, JwtUser jwtUser) {
         int number = 1;
         int pageSize = 20;
         if (juz.getNumber() == 1) pageSize = 21;
@@ -63,10 +64,20 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
+    public void pagesToDo(List<Page> pages) {
+        pages.forEach(page -> {
+            page.setStatus(PageStatus.TODO);
+            page.setUser(null);
+        });
+        pageRepository.saveAll(pages);
+    }
+
+    @Override
     @Transactional
     public Page bookPage(Page page, User user) {
         page.setStatus(PageStatus.BOOKED);
         page.setUser(user);
+        page.setBookedAt(LocalDateTime.now());
         return pageRepository.save(page);
     }
 
@@ -75,6 +86,7 @@ public class PageServiceImpl implements PageService {
     public Page pageInProgress(Page page, User user) {
         page.setStatus(PageStatus.IN_PROGRESS);
         page.setUser(user);
+        page.setProgressedAt(LocalDateTime.now());
         return pageRepository.save(page);
     }
 
@@ -117,5 +129,15 @@ public class PageServiceImpl implements PageService {
     @Override
     public List<Page> findAllByJuzAndStatus(Juz juz, PageStatus status) {
         return pageRepository.findAllByJuzAndStatus(juz, status);
+    }
+
+    @Override
+    public List<Page> findAllWhichBookedFiveMinutesAgo() {
+        return pageRepository.findAllByStatusAndBookedAtBefore(PageStatus.BOOKED, LocalDateTime.now().minusMinutes(5));
+    }
+
+    @Override
+    public List<Page> findAllWhichProgressedTwoDayAgo() {
+        return pageRepository.findAllByStatusAndProgressedAtBefore(PageStatus.IN_PROGRESS, LocalDateTime.now().minusDays(2));
     }
 }

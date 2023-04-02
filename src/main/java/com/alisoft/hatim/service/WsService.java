@@ -15,6 +15,6 @@ public interface WsService {
     void setPageInProgress(PageRequestDto pageRequestDto) throws NotFoundException;
     void setPageDone(PageRequestDto pageRequestDto) throws NotFoundException;
     void getUserPages(String username);
-    void checkBookedPage(BookPageRequestDto bookPageRequestDto);
-    void checkInProgressPages(PageRequestDto pageRequestDto);
+    void rollbackExpiredBookedPages();
+    void rollbackExpiredProgressedPages();
 }
