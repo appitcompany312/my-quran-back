@@ -11,8 +11,6 @@ import java.util.UUID;
 
 @Repository
 public interface HatimRepository extends JpaRepository<Hatim, UUID> {
-    Optional<Hatim> findFirstByStatusOrderByCreatedAtAsc(HatimStatus status);
-    Optional<Hatim> findFirstByStatusOrderByUpdatedAtAsc(HatimStatus status);
-
     List<Hatim> findAllByStatus(HatimStatus status);
+
 }
