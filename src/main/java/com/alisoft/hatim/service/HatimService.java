@@ -23,5 +23,6 @@ public interface HatimService {
     List<Hatim> findAllByStatus(HatimStatus status);
     List<JuzResponseDto> getJuzByHatim(UUID id);
 
+    Hatim saveGeneralHatim();
 
 }

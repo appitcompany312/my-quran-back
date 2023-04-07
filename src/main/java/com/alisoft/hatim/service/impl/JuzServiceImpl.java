@@ -3,13 +3,12 @@ package com.alisoft.hatim.service.impl;
 import com.alisoft.hatim.config.security.jwt.JwtUser;
 import com.alisoft.hatim.domain.Hatim;
 import com.alisoft.hatim.domain.Juz;
-import com.alisoft.hatim.domain.Page;
 import com.alisoft.hatim.domain.reference.JuzStatus;
 import com.alisoft.hatim.domain.reference.PageStatus;
 import com.alisoft.hatim.exception.NotFoundException;
 import com.alisoft.hatim.repository.JuzRepository;
-import com.alisoft.hatim.service.PageService;
 import com.alisoft.hatim.service.JuzService;
+import com.alisoft.hatim.service.PageService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +21,8 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class JuzServiceImpl implements JuzService {
+
+    private static final int MAX_JUZ_NUMBER = 30;
 
     private final JuzRepository juzRepository;
     private final PageService pageService;
@@ -36,8 +37,8 @@ public class JuzServiceImpl implements JuzService {
     @Override
     @Transactional
     public void createJuzsForHatim(Hatim hatim, JwtUser jwtUser) throws NotFoundException {
-        Integer number = 1;
-        for (int i = number; i <= 30; i++) {
+        int number = 1;
+        for (int i = number; i <= MAX_JUZ_NUMBER; i++) {
             Juz juz = new Juz();
             juz.setHatim(hatim);
             juz.setNumber(number);
@@ -70,24 +71,18 @@ public class JuzServiceImpl implements JuzService {
 
     @Override
     @Transactional(readOnly = true)
-    public Boolean isAllJuzsDone(Hatim hatim) {
+    public boolean isAllJuzsDone(Hatim hatim) {
         List<Juz> juzs = juzRepository.findAllByHatimOrderByNumber(hatim);
-        for (Juz juz : juzs) {
-            if (juz.getStatus() != JuzStatus.DONE) return false;
-        }
-        return true;
+        return juzs.stream()
+                .noneMatch(juz -> juz.getStatus() != JuzStatus.DONE);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Boolean isJuzExistsToDoPage(Hatim hatim) {
+    public boolean isJuzExistsToDoPage(Hatim hatim) {
         List<Juz> juzs = juzRepository.findAllByHatimOrderByNumber(hatim);
-        for (Juz juz : juzs) {
-            List<Page> pages = pageService.getAllByJuz(juz);
-            for (Page page : pages) {
-                if (page.getStatus() == PageStatus.TODO) return true;
-            }
-        }
-        return false;
+        return juzs.stream()
+                .flatMap(juz -> pageService.getAllByJuz(juz).stream())
+                .anyMatch(page -> page.getStatus() == PageStatus.TODO);
     }
 }

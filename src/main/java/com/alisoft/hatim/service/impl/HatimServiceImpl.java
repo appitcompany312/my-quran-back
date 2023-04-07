@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Data
@@ -39,14 +41,18 @@ public class HatimServiceImpl implements HatimService {
     @Override
     @Transactional
     public HatimResponseDto joinToHatim(JwtUser jwtUser) throws NotFoundException {
-        Hatim hatim = hatimRepository.findFirstByStatusOrderByCreatedAtAsc(HatimStatus.IN_PROGRESS).orElse(null);;
-        if (hatim == null || !juzService.isJuzExistsToDoPage(hatim)) {
-            hatim = new Hatim();
-            hatim.setStatus(HatimStatus.IN_PROGRESS);
-            hatim.setType(HatimType.GENERAL);
-            hatim = hatimRepository.save(hatim);
-            juzService.createJuzsForHatim(hatim, jwtUser);
+        Objects.requireNonNull(jwtUser, "User must not be null");
+
+        Optional<Hatim> hatimOptional = hatimRepository.findAllByStatus(HatimStatus.IN_PROGRESS).stream()
+                .filter(juzService::isJuzExistsToDoPage)
+                .findFirst();
+
+        if (hatimOptional.isPresent()) {
+            return hatimMapper.hatimToResponseDto(hatimOptional.get());
         }
+
+        Hatim hatim = saveGeneralHatim();
+        juzService.createJuzsForHatim(hatim, jwtUser);
         return hatimMapper.hatimToResponseDto(hatim);
     }
 
@@ -73,5 +79,14 @@ public class HatimServiceImpl implements HatimService {
     @Transactional(readOnly = true)
     public List<JuzResponseDto> getJuzByHatim(UUID id) {
         return juzMapper.juzsToResponseDtos(juzService.getByHatim(hatimRepository.getReferenceById(id)));
+    }
+
+    @Override
+    @Transactional
+    public Hatim saveGeneralHatim() {
+        Hatim hatim =  new Hatim();
+        hatim.setStatus(HatimStatus.IN_PROGRESS);
+        hatim.setType(HatimType.GENERAL);
+        return hatimRepository.save(hatim);
     }
 }

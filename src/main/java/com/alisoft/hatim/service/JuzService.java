@@ -20,7 +20,7 @@ public interface JuzService {
 
     void setJuzStatusDone(Juz juz);
 
-    Boolean isAllJuzsDone(Hatim hatim);
+    boolean isAllJuzsDone(Hatim hatim);
 
-    Boolean isJuzExistsToDoPage(Hatim hatim);
+    boolean isJuzExistsToDoPage(Hatim hatim);
 }
