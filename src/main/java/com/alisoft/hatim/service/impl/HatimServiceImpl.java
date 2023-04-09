@@ -43,7 +43,7 @@ public class HatimServiceImpl implements HatimService {
     public HatimResponseDto joinToHatim(JwtUser jwtUser) throws NotFoundException {
         Objects.requireNonNull(jwtUser, "User must not be null");
 
-        Optional<Hatim> hatimOptional = hatimRepository.findAllByStatus(HatimStatus.IN_PROGRESS).stream()
+        Optional<Hatim> hatimOptional = hatimRepository.findAllByStatusOrderByCreatedAt(HatimStatus.IN_PROGRESS).stream()
                 .filter(juzService::isJuzExistsToDoPage)
                 .findFirst();
 
