@@ -127,17 +127,20 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Page> findAllByJuzAndStatus(Juz juz, PageStatus status) {
         return pageRepository.findAllByJuzAndStatus(juz, status);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Page> findAllWhichBookedFiveMinutesAgo() {
         return pageRepository.findAllByStatusAndBookedAtBefore(PageStatus.BOOKED, LocalDateTime.now().minusMinutes(5));
     }
 
     @Override
-    public List<Page> findAllWhichProgressedTwoDayAgo() {
-        return pageRepository.findAllByStatusAndProgressedAtBefore(PageStatus.IN_PROGRESS, LocalDateTime.now().minusDays(2));
+    @Transactional(readOnly = true)
+    public List<Page> findAllWhichProgressedHourAgo(int hour) {
+        return pageRepository.findAllByStatusAndProgressedAtBefore(PageStatus.IN_PROGRESS, LocalDateTime.now().minusHours(hour));
     }
 }

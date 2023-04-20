@@ -33,5 +33,5 @@ public interface PageService {
     List<Page> findAllByJuzAndStatus(Juz juz, PageStatus status);
 
     List<Page> findAllWhichBookedFiveMinutesAgo();
-    List<Page> findAllWhichProgressedTwoDayAgo();
+    List<Page> findAllWhichProgressedHourAgo(int hour);
 }

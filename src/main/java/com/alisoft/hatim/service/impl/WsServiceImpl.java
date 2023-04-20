@@ -35,6 +35,8 @@ public class WsServiceImpl implements WsService {
     private final PageService pageService;
     private final PageMapper pageMapper;
 
+    private static final int PROGRESSED_EXPIRATION_HOUR = 12;
+
     @Override
     public void getJuzByHatim(UUID hatimId) throws NotFoundException {
         listOfJuz(hatimService.get(hatimId));
@@ -118,7 +120,7 @@ public class WsServiceImpl implements WsService {
 
     @Override
     public void rollbackExpiredProgressedPages() {
-        setToDoExpiredPages(pageService.findAllWhichProgressedTwoDayAgo());
+        setToDoExpiredPages(pageService.findAllWhichProgressedHourAgo(PROGRESSED_EXPIRATION_HOUR));
     }
 
     private void setToDoExpiredPages(List<Page> expiredPages) {
