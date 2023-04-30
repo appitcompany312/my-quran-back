@@ -22,6 +22,7 @@ public class UserMapperImpl implements UserMapper {
                 .userName(user.getUsername())
                 .gender(user.getGender())
                 .language(user.getLanguage())
+                .confirmed(user.getConfirmed())
                 .build();
     }
 

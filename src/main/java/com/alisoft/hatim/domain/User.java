@@ -5,12 +5,14 @@ import com.alisoft.hatim.domain.reference.Gender;
 import com.alisoft.hatim.domain.reference.Language;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.*;
 
 @Getter
 @Setter
 @Entity
+@ToString
 @Table(name = "users")
 public class User extends BaseEntity {
 
@@ -19,6 +21,16 @@ public class User extends BaseEntity {
 
     @Column(name = "password")
     private String password;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "surname")
+    private String surname;
+
+
+    @Column(name = "confirmed", nullable = false, columnDefinition = "boolean default false")
+    private Boolean confirmed;
 
     @Enumerated(value = EnumType.STRING)
     @Column(name = "gender")
