@@ -9,8 +9,9 @@ import lombok.Data;
 @Builder
 public class UserResponseDto {
 
-    Long id;
-    String userName;
-    Gender gender;
-    Language language;
+    private Long id;
+    private String userName;
+    private Gender gender;
+    private Language language;
+    private Boolean confirmed;
 }
