@@ -75,11 +75,15 @@ public class UserServiceImpl implements UserService {
         return authenticate(form.getUsername(), password);
     }
 
-//    @Override
-//    public AuthResponse signUp(SignUpForm form) throws BadCredentialsException, NotFoundException {
-//        User user = create(form);
-//        return authenticate(user.getUsername(), "123456");
-//    }
+    @Override
+    public AuthResponse signUp(SignUpForm form) throws BadCredentialsException, NotFoundException {
+        AuthForm authForm = new AuthForm();
+        authForm.setGender(form.getGender());
+        authForm.setLanguageCode(form.getLanguageCode());
+        authForm.setUsername(UUID.randomUUID().toString());
+        User user = create(authForm);
+        return authenticate(user.getUsername(), "123456");
+    }
 
     @Override
     public AuthResponse refresh(RefreshForm form) {

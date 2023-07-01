@@ -15,7 +15,7 @@ public interface UserService {
     User create(AuthForm form) throws NotFoundException;
 
     AuthResponse login(AuthForm form) throws NotFoundException;
-//    AuthResponse signUp(SignUpForm form) throws NotFoundException;
+    AuthResponse signUp(SignUpForm form) throws NotFoundException;
 
     AuthResponse refresh(RefreshForm form);
 
