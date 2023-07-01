@@ -43,11 +43,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User create(SignUpForm form) throws NotFoundException {
-        String uuid = UUID.randomUUID().toString();
-
+    public User create(AuthForm form) throws NotFoundException {
         User user = new User();
-        user.setUsername(uuid);
+        user.setUsername(form.getUsername());
         user.setPassword(hash("123456"));
         user.setGender(form.getGender());
         user.setLanguage(languageService.get(1L));
@@ -57,15 +55,31 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AuthResponse login(AuthForm form) throws BadCredentialsException {
-        return authenticate(form.getUsername(), form.getPassword());
+    public AuthResponse login(AuthForm form) throws BadCredentialsException, NotFoundException {
+        User user;
+        String password = "123456";
+        if (isNull(form.getUsername()) || form.getUsername().isBlank()) {
+            String randomUsername = UUID.randomUUID().toString();
+            form.setUsername(randomUsername);
+            user = create(form);
+            return authenticate(user.getUsername(), password);
+        }
+
+        user = findByUserName(form.getUsername());
+
+        if (isNull(user)) {
+            user = create(form);
+            return authenticate(user.getUsername(), password);
+        }
+
+        return authenticate(form.getUsername(), password);
     }
 
-    @Override
-    public AuthResponse signUp(SignUpForm form) throws BadCredentialsException, NotFoundException {
-        User user = create(form);
-        return authenticate(user.getUsername(), "123456");
-    }
+//    @Override
+//    public AuthResponse signUp(SignUpForm form) throws BadCredentialsException, NotFoundException {
+//        User user = create(form);
+//        return authenticate(user.getUsername(), "123456");
+//    }
 
     @Override
     public AuthResponse refresh(RefreshForm form) {
